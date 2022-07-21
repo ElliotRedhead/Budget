@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres
+    volumes:
+      - budget-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+    - budget
+    ports:
+      - "5432:5432"
+  api:
+    build:
+      context: ./backend/
+    command: python3 manage.py runserver 0.0.0.0:8000
+    volumes:
+    - ./backend/:/backend
+    networks:
+    - budget
+    ports:
+    - "8000:8000"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
+  frontend:
+    stdin_open: true
+    environment:
+      WATCHPACK_POLLING: "true"
+    build:
+      context: ./frontend/
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    networks:
+      - budget
+    depends_on:
+      - api
+    volumes:
+      - ./frontend/node_modules/:/frontend/node_modules
+      - ./frontend/:/frontend
+    command: yarn start --host 0.0.0.0
+
+networks:
+  budget:
+    driver: bridge
+
+volumes:
+  budget-db:
+    driver: local
+  budget-api:
+    driver: local
+  budget-frontend:
+    driver: local
